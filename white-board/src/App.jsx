@@ -8,52 +8,46 @@ const App = () => {
   const [brushSize, setBrushSize] = useState(5);
   const [canvas, setCanvas] = useState(null);
 
+  // Initialize fabric.Canvas on mount
   useEffect(() => {
-    // Initialize Fabric.js Canvas when component mounts
     const fabricCanvas = new window.fabric.Canvas(canvasRef.current);
     fabricCanvas.isDrawingMode = true;
-    fabricCanvas.freeDrawingBrush.color = brushColor;
+    fabricCanvas.freeDrawingBrush.color = brushColor;  // Set initial brush color
     fabricCanvas.freeDrawingBrush.width = brushSize;
 
-    // Adjust the canvas size based on the container size
     const canvasContainer = canvasContainerRef.current;
     fabricCanvas.setWidth(canvasContainer.clientWidth);
     fabricCanvas.setHeight(canvasContainer.clientHeight);
 
     setCanvas(fabricCanvas);
 
-    // Cleanup on component unmount
     return () => {
-      fabricCanvas.dispose();
+      fabricCanvas.dispose(); // Cleanup on unmount
     };
-  }, []); // Empty dependency array to ensure this effect runs only once on mount
+  }, []); // Empty dependency array ensures this effect runs only once on mount
 
+  // Update brush color dynamically whenever the brushColor state changes
   useEffect(() => {
-    // Handle window resizing and update canvas size dynamically
-    const handleResize = () => {
-      if (canvas) {
-        const canvasContainer = canvasContainerRef.current;
-        canvas.setWidth(canvasContainer.clientWidth);
-        canvas.setHeight(canvasContainer.clientHeight);
-        canvas.renderAll(); // Re-render the canvas to apply the size changes
-      }
-    };
+    if (canvas) {
+      canvas.freeDrawingBrush.color = brushColor;
+      canvas.renderAll();  // Re-render the canvas to apply the new brush color
+    }
+  }, [brushColor, canvas]); // Dependency on brushColor and canvas to update when either changes
 
-    // Add resize event listener
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup event listener on unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [canvas]); // Depend on the canvas instance
+  // Update brush size dynamically
+  useEffect(() => {
+    if (canvas) {
+      canvas.freeDrawingBrush.width = brushSize;
+      canvas.renderAll(); // Re-render the canvas to apply the new brush size
+    }
+  }, [brushSize, canvas]); // Dependency on brushSize and canvas to update when either changes
 
   const handleColorChange = (e) => {
-    setBrushColor(e.target.value);
+    setBrushColor(e.target.value); // Update brush color state
   };
 
   const handleBrushSizeChange = (e) => {
-    setBrushSize(Number(e.target.value));
+    setBrushSize(Number(e.target.value)); // Update brush size state
   };
 
   const clearCanvas = () => {
@@ -90,7 +84,6 @@ const App = () => {
       </div>
 
       <div className="canvas-container" ref={canvasContainerRef}>
-        {/* This is where the canvas will be rendered */}
         <canvas ref={canvasRef}></canvas>
       </div>
     </div>
