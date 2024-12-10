@@ -1,58 +1,95 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './App.css'; // Import the CSS file
+import io from 'socket.io-client';
+import './App.css';
+
+// Initialize socket connection
+const socket = io('http://localhost:3000'); // Ensure backend is running
 
 const App = () => {
-  const canvasRef = useRef(null); // Ref for the canvas DOM element
-  const canvasContainerRef = useRef(null); // Ref for the canvas container
+  const canvasRef = useRef(null);
+  const canvasContainerRef = useRef(null);
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [canvas, setCanvas] = useState(null);
 
-  // Initialize fabric.Canvas on mount
+  // Initialize Canvas
   useEffect(() => {
-    const fabricCanvas = new window.fabric.Canvas(canvasRef.current);
-    fabricCanvas.isDrawingMode = true;
-    fabricCanvas.freeDrawingBrush.color = brushColor;  // Set initial brush color
-    fabricCanvas.freeDrawingBrush.width = brushSize;
+    const fabricCanvas = new window.fabric.Canvas(canvasRef.current, {
+      isDrawingMode: true,
+    });
 
-    const canvasContainer = canvasContainerRef.current;
-    fabricCanvas.setWidth(canvasContainer.clientWidth);
-    fabricCanvas.setHeight(canvasContainer.clientHeight);
+    // Set initial canvas dimensions
+    const resizeCanvas = () => {
+      const container = canvasContainerRef.current;
+      fabricCanvas.setWidth(container.clientWidth);
+      fabricCanvas.setHeight(container.clientHeight);
+      fabricCanvas.renderAll();
+    };
+    resizeCanvas();
 
+    // Handle window resize
+    window.addEventListener('resize', resizeCanvas);
+
+    // Sync with state
     setCanvas(fabricCanvas);
 
+    // Cleanup on unmount
     return () => {
-      fabricCanvas.dispose(); // Cleanup on unmount
+      window.removeEventListener('resize', resizeCanvas);
+      fabricCanvas.dispose();
     };
-  }, []); // Empty dependency array ensures this effect runs only once on mount
+  }, []);
 
-  // Update brush color dynamically whenever the brushColor state changes
+  // Set brush properties
   useEffect(() => {
     if (canvas) {
       canvas.freeDrawingBrush.color = brushColor;
-      canvas.renderAll();  // Re-render the canvas to apply the new brush color
+      canvas.freeDrawingBrush.width = brushSize;
     }
-  }, [brushColor, canvas]); // Dependency on brushColor and canvas to update when either changes
+  }, [brushColor, brushSize, canvas]);
 
-  // Update brush size dynamically
+  // Listen for drawing data from the server
   useEffect(() => {
     if (canvas) {
-      canvas.freeDrawingBrush.width = brushSize;
-      canvas.renderAll(); // Re-render the canvas to apply the new brush size
+      socket.on('draw', (data) => {
+        canvas.loadFromJSON(data, () => {
+          canvas.renderAll();
+        });
+      });
     }
-  }, [brushSize, canvas]); // Dependency on brushSize and canvas to update when either changes
 
-  const handleColorChange = (e) => {
-    setBrushColor(e.target.value); // Update brush color state
+    // Cleanup socket event
+    return () => {
+      socket.off('draw');
+    };
+  }, [canvas]);
+
+  // Send drawing updates to the server
+  const sendDrawingData = () => {
+    if (canvas) {
+      const json = canvas.toJSON();
+      socket.emit('draw', json);
+    }
   };
 
-  const handleBrushSizeChange = (e) => {
-    setBrushSize(Number(e.target.value)); // Update brush size state
-  };
+  // Listen for new drawing paths and emit data
+  useEffect(() => {
+    if (canvas) {
+      const onPathCreated = () => sendDrawingData();
+      canvas.on('path:created', onPathCreated);
 
+      // Cleanup event
+      return () => {
+        canvas.off('path:created', onPathCreated);
+      };
+    }
+  }, [canvas]);
+
+  // Clear canvas and notify other clients
   const clearCanvas = () => {
     if (canvas) {
       canvas.clear();
+      sendDrawingData(); // Send cleared state to others
     }
   };
 
@@ -65,7 +102,7 @@ const App = () => {
           <input
             type="color"
             value={brushColor}
-            onChange={handleColorChange}
+            onChange={(e) => setBrushColor(e.target.value)}
             className="color-picker"
           />
         </label>
@@ -74,9 +111,9 @@ const App = () => {
           <input
             type="number"
             min="1"
-            max="20"
+            max="50"
             value={brushSize}
-            onChange={handleBrushSizeChange}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
             className="brush-size"
           />
         </label>
