@@ -1,90 +1,98 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from 'react';
+import './App.css'; // Import the CSS file
 
 const App = () => {
-  const canvasRef = useRef(null);
-  const [brushColor, setBrushColor] = useState("black");
+  const canvasRef = useRef(null); // Ref for the canvas DOM element
+  const canvasContainerRef = useRef(null); // Ref for the canvas container
+  const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
+  const [canvas, setCanvas] = useState(null);
 
   useEffect(() => {
-    // Initialize Fabric.js canvas
-    const canvas = new fabric.Canvas("whiteboard", {
-      backgroundColor: "white",
-      isDrawingMode: true,
-    });
+    // Initialize Fabric.js Canvas when component mounts
+    const fabricCanvas = new window.fabric.Canvas(canvasRef.current);
+    fabricCanvas.isDrawingMode = true;
+    fabricCanvas.freeDrawingBrush.color = brushColor;
+    fabricCanvas.freeDrawingBrush.width = brushSize;
 
-    // Set default brush settings
-    canvas.freeDrawingBrush.color = brushColor;
-    canvas.freeDrawingBrush.width = brushSize;
+    // Adjust the canvas size based on the container size
+    const canvasContainer = canvasContainerRef.current;
+    fabricCanvas.setWidth(canvasContainer.clientWidth);
+    fabricCanvas.setHeight(canvasContainer.clientHeight);
 
-    // Save canvas reference
-    canvasRef.current = canvas;
+    setCanvas(fabricCanvas);
 
-    // Cleanup on unmount
-    return () => canvas.dispose();
-  }, []);
+    // Cleanup on component unmount
+    return () => {
+      fabricCanvas.dispose();
+    };
+  }, []); // Empty dependency array to ensure this effect runs only once on mount
 
-  // Update brush settings when state changes
   useEffect(() => {
-    if (canvasRef.current) {
-      canvasRef.current.freeDrawingBrush.color = brushColor;
-      canvasRef.current.freeDrawingBrush.width = brushSize;
-    }
-  }, [brushColor, brushSize]);
+    // Handle window resizing and update canvas size dynamically
+    const handleResize = () => {
+      if (canvas) {
+        const canvasContainer = canvasContainerRef.current;
+        canvas.setWidth(canvasContainer.clientWidth);
+        canvas.setHeight(canvasContainer.clientHeight);
+        canvas.renderAll(); // Re-render the canvas to apply the size changes
+      }
+    };
 
-  // Clear the canvas
+    // Add resize event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup event listener on unmount
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [canvas]); // Depend on the canvas instance
+
+  const handleColorChange = (e) => {
+    setBrushColor(e.target.value);
+  };
+
+  const handleBrushSizeChange = (e) => {
+    setBrushSize(Number(e.target.value));
+  };
+
   const clearCanvas = () => {
-    canvasRef.current.clear();
-    canvasRef.current.backgroundColor = "white"; // Reset background color
-    canvasRef.current.renderAll();
+    if (canvas) {
+      canvas.clear();
+    }
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
-      <h1>Whiteboard</h1>
-
-      {/* Toolbar */}
-      <div style={{ marginBottom: "10px" }}>
+    <div className="app-container">
+      <h1>Collaborative Whiteboard</h1>
+      <div className="toolbar">
         <label>
-          Brush Color:{" "}
+          Brush Color:
           <input
             type="color"
             value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
+            onChange={handleColorChange}
+            className="color-picker"
           />
         </label>
-        <label style={{ marginLeft: "15px" }}>
-          Brush Size:{" "}
+        <label>
+          Brush Size:
           <input
             type="number"
             min="1"
-            max="50"
+            max="20"
             value={brushSize}
-            onChange={(e) => setBrushSize(parseInt(e.target.value))}
+            onChange={handleBrushSizeChange}
+            className="brush-size"
           />
         </label>
-        <button
-          style={{
-            marginLeft: "15px",
-            padding: "5px 10px",
-            backgroundColor: "#f44336",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-          onClick={clearCanvas}
-        >
-          Clear Canvas
-        </button>
+        <button onClick={clearCanvas}>Clear</button>
       </div>
 
-      {/* Canvas */}
-      <canvas
-        id="whiteboard"
-        width="800"
-        height="600"
-        style={{ border: "1px solid black" }}
-      ></canvas>
+      <div className="canvas-container" ref={canvasContainerRef}>
+        {/* This is where the canvas will be rendered */}
+        <canvas ref={canvasRef}></canvas>
+      </div>
     </div>
   );
 };
