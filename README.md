@@ -51,3 +51,7 @@ A simple whiteboard application built using React and Fabric.js, with plans to e
 - Vite: For fast development and build tooling.
 - Fabric.js: For canvas manipulation and drawing features.
 
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
