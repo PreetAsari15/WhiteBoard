@@ -1,6 +1,6 @@
 # Collaborative Whiteboard Application
 
-A simple whiteboard application built using React and Fabric.js, with plans to enable real-time collaborative editing on the cloud.
+A simple whiteboard application built using React and Fabric.js, with real-time collaborative editing on the cloud.
 
 ![image](https://github.com/user-attachments/assets/12deee02-c533-4d79-98e4-af497c15a9b0)
 
