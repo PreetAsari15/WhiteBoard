@@ -1,16 +1,33 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from './context/AuthProvider'; // Custom context for user auth
 import io from 'socket.io-client';
 import './App.css';
 
-// Initialize socket connection
-const socket = io('http://localhost:3000'); // Ensure backend is running
+// Initialize socket connection (ensure backend is running)
+const socket = io('http://localhost:3000'); // Your backend server URL
 
 const App = () => {
+  // Auth state from the context
+  const { user, login, logout } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Canvas state and refs
   const canvasRef = useRef(null);
   const canvasContainerRef = useRef(null);
   const [brushColor, setBrushColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState(5);
   const [canvas, setCanvas] = useState(null);
+
+  // Handle login form submission
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error('Login error:', error);
+    }
+  };
 
   // Initialize Canvas
   useEffect(() => {
@@ -18,16 +35,19 @@ const App = () => {
       isDrawingMode: true,
     });
 
-    // Set initial canvas dimensions
+    // Set canvas size
     const resizeCanvas = () => {
       const container = canvasContainerRef.current;
-      fabricCanvas.setWidth(container.clientWidth);
-      fabricCanvas.setHeight(container.clientHeight);
-      fabricCanvas.renderAll();
+      if (container) { // Ensure the container exists before accessing its properties
+        fabricCanvas.setWidth(container.clientWidth);
+        fabricCanvas.setHeight(container.clientHeight);
+        fabricCanvas.renderAll();
+      }
     };
+
     resizeCanvas();
 
-    // Handle window resize
+    // Handle window resizing
     window.addEventListener('resize', resizeCanvas);
 
     // Sync with state
@@ -93,36 +113,66 @@ const App = () => {
     }
   };
 
+  // Return the UI
   return (
     <div className="app-container">
       <h1>Collaborative Whiteboard</h1>
-      <div className="toolbar">
-        <label>
-          Brush Color:
+      {user ? (
+        <div>
+          <p>Welcome, {user.email}!</p>
+          <button onClick={logout}>Logout</button>
+        </div>
+      ) : (
+        <form onSubmit={handleLogin}>
           <input
-            type="color"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
-            className="color-picker"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
-        <label>
-          Brush Size:
           <input
-            type="number"
-            min="1"
-            max="50"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="brush-size"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
-        <button onClick={clearCanvas}>Clear</button>
-      </div>
+          <button type="submit">Login</button>
+        </form>
+      )}
 
-      <div className="canvas-container" ref={canvasContainerRef}>
-        <canvas ref={canvasRef}></canvas>
-      </div>
+      {/* Toolbar for brush settings */}
+      {user && (
+        <div className="toolbar">
+          <label>
+            Brush Color:
+            <input
+              type="color"
+              value={brushColor}
+              onChange={(e) => setBrushColor(e.target.value)}
+              className="color-picker"
+            />
+          </label>
+          <label>
+            Brush Size:
+            <input
+              type="number"
+              min="1"
+              max="50"
+              value={brushSize}
+              onChange={(e) => setBrushSize(Number(e.target.value))}
+              className="brush-size"
+            />
+          </label>
+          <button onClick={clearCanvas}>Clear</button>
+        </div>
+      )}
+
+      {/* Canvas container */}
+      {user && (
+        <div className="canvas-container" ref={canvasContainerRef}>
+          <canvas ref={canvasRef}></canvas>
+        </div>
+      )}
     </div>
   );
 };
