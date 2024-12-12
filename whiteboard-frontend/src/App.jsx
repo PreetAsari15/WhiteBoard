@@ -1,25 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useAuth } from './context/AuthProvider'; // Custom context for user auth
+import { useAuth } from './context/AuthProvider';
 import io from 'socket.io-client';
 import './App.css';
 
-// Initialize socket connection (ensure backend is running)
-const socket = io('http://localhost:3000'); // Your backend server URL
+// Initialize socket connection
+const socket = io('http://localhost:3000'); // Ensure backend is running
 
 const App = () => {
-  // Auth state from the context
+  // Auth
   const { user, login, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Canvas state and refs
-  const canvasRef = useRef(null);
-  const canvasContainerRef = useRef(null);
-  const [brushColor, setBrushColor] = useState('#000000');
-  const [brushSize, setBrushSize] = useState(5);
-  const [canvas, setCanvas] = useState(null);
-
-  // Handle login form submission
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -29,16 +21,25 @@ const App = () => {
     }
   };
 
+  // Canvas
+  const canvasRef = useRef(null);
+  const canvasContainerRef = useRef(null);
+  const [brushColor, setBrushColor] = useState('#000000');
+  const [brushSize, setBrushSize] = useState(5);
+  const [canvas, setCanvas] = useState(null);
+
   // Initialize Canvas
   useEffect(() => {
+    if (!user) return;  // Don't initialize canvas unless user is logged in
+
     const fabricCanvas = new window.fabric.Canvas(canvasRef.current, {
       isDrawingMode: true,
     });
 
-    // Set canvas size
+    // Set initial canvas dimensions
     const resizeCanvas = () => {
       const container = canvasContainerRef.current;
-      if (container) { // Ensure the container exists before accessing its properties
+      if (container) {
         fabricCanvas.setWidth(container.clientWidth);
         fabricCanvas.setHeight(container.clientHeight);
         fabricCanvas.renderAll();
@@ -47,7 +48,7 @@ const App = () => {
 
     resizeCanvas();
 
-    // Handle window resizing
+    // Handle window resize
     window.addEventListener('resize', resizeCanvas);
 
     // Sync with state
@@ -58,7 +59,7 @@ const App = () => {
       window.removeEventListener('resize', resizeCanvas);
       fabricCanvas.dispose();
     };
-  }, []);
+  }, [user]);  // Only create canvas after user is logged in
 
   // Set brush properties
   useEffect(() => {
@@ -113,7 +114,6 @@ const App = () => {
     }
   };
 
-  // Return the UI
   return (
     <div className="app-container">
       <h1>Collaborative Whiteboard</h1>
@@ -121,6 +121,32 @@ const App = () => {
         <div>
           <p>Welcome, {user.email}!</p>
           <button onClick={logout}>Logout</button>
+          <div className="toolbar">
+            <label>
+              Brush Color:
+              <input
+                type="color"
+                value={brushColor}
+                onChange={(e) => setBrushColor(e.target.value)}
+                className="color-picker"
+              />
+            </label>
+            <label>
+              Brush Size:
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={brushSize}
+                onChange={(e) => setBrushSize(Number(e.target.value))}
+                className="brush-size"
+              />
+            </label>
+            <button onClick={clearCanvas}>Clear</button>
+          </div>
+          <div className="canvas-container" ref={canvasContainerRef}>
+            <canvas ref={canvasRef}></canvas>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleLogin}>
@@ -138,40 +164,6 @@ const App = () => {
           />
           <button type="submit">Login</button>
         </form>
-      )}
-
-      {/* Toolbar for brush settings */}
-      {user && (
-        <div className="toolbar">
-          <label>
-            Brush Color:
-            <input
-              type="color"
-              value={brushColor}
-              onChange={(e) => setBrushColor(e.target.value)}
-              className="color-picker"
-            />
-          </label>
-          <label>
-            Brush Size:
-            <input
-              type="number"
-              min="1"
-              max="50"
-              value={brushSize}
-              onChange={(e) => setBrushSize(Number(e.target.value))}
-              className="brush-size"
-            />
-          </label>
-          <button onClick={clearCanvas}>Clear</button>
-        </div>
-      )}
-
-      {/* Canvas container */}
-      {user && (
-        <div className="canvas-container" ref={canvasContainerRef}>
-          <canvas ref={canvasRef}></canvas>
-        </div>
       )}
     </div>
   );
