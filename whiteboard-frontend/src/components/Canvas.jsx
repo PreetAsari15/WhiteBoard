@@ -1,92 +1,105 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthProvider';
-import { useNavigate } from 'react-router-dom';
-import '../assets/styles/Canvas.css';
+import { useRef, useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
 
-const Canvas = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+const socket = io('http://localhost:3000'); // Backend URL
+
+function Canvas() {
   const canvasRef = useRef(null);
-  const canvasContainerRef = useRef(null);
-  const [brushColor, setBrushColor] = useState('#000000');
-  const [brushSize, setBrushSize] = useState(5);
-  const [canvas, setCanvas] = useState(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [prevPos, setPrevPos] = useState(null);
 
-  const { logout } = useAuth();
   useEffect(() => {
-    if (!user) {
-      navigate('/login'); // Redirect if not logged in
-    }
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
 
-    const fabricCanvas = new window.fabric.Canvas(canvasRef.current, {
-      isDrawingMode: true,
+    // Listen for drawing data from the server
+    socket.on('draw', (data) => {
+      const { x, y, prevX, prevY, color, size } = data;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.beginPath();
+      ctx.moveTo(prevX, prevY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
     });
 
-    const resizeCanvas = () => {
-      const container = canvasContainerRef.current;
-      if (container) {
-        fabricCanvas.setWidth(container.clientWidth);
-        fabricCanvas.setHeight(container.clientHeight);
-        fabricCanvas.renderAll();
-      }
-    };
-
-    resizeCanvas();
-
-    window.addEventListener('resize', resizeCanvas);
-
-    setCanvas(fabricCanvas);
+    // Listen for the clear event
+    socket.on('clear', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      fabricCanvas.dispose();
+      socket.off('draw');
+      socket.off('clear');
     };
-  }, [user, navigate]);
+  }, []);
 
-  useEffect(() => {
-    if (canvas) {
-      canvas.freeDrawingBrush.color = brushColor;
-      canvas.freeDrawingBrush.width = brushSize;
-    }
-  }, [brushColor, brushSize, canvas]);
+  const startDrawing = (event) => {
+    const { offsetX: x, offsetY: y } = event.nativeEvent;
+    setIsDrawing(true);
+    setPrevPos({ x, y });
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    setPrevPos(null);
+  };
+
+  const draw = (event) => {
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    const { offsetX: x, offsetY: y } = event.nativeEvent;
+
+    const data = {
+      x,
+      y,
+      prevX: prevPos.x,
+      prevY: prevPos.y,
+      color: '#000000',
+      size: 2,
+    };
+
+    // Emit drawing data to the server
+    socket.emit('draw', data);
+
+    // Draw on the local canvas
+    ctx.strokeStyle = data.color;
+    ctx.lineWidth = data.size;
+    ctx.beginPath();
+    ctx.moveTo(data.prevX, data.prevY);
+    ctx.lineTo(data.x, data.y);
+    ctx.stroke();
+
+    setPrevPos({ x, y });
+  };
 
   const clearCanvas = () => {
-    if (canvas) {
-      canvas.clear();
-    }
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Emit the clear event to the server
+    socket.emit('clear');
   };
 
   return (
     <div>
-      <button onClick={logout}>Logout</button>
-      <div className="toolbar">
-        <label>
-          Brush Color:
-          <input
-            type="color"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
-            className="color-picker"
-          />
-        </label>
-        <label>
-          Brush Size:
-          <input
-            type="number"
-            min="1"
-            max="50"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="brush-size"
-          />
-        </label>
-        <button onClick={clearCanvas}>Clear</button>
-      </div>
-      <div className="canvas-container" ref={canvasContainerRef}>
-        <canvas ref={canvasRef}></canvas>
-      </div>
+      <canvas
+        ref={canvasRef}
+        width={800}
+        height={600}
+        onMouseDown={startDrawing}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onMouseMove={draw}
+        style={{ border: '1px solid black', cursor: 'crosshair' }}
+      />
+      <button onClick={clearCanvas}>Clear Canvas</button>
     </div>
   );
-};
+}
 
 export default Canvas;
