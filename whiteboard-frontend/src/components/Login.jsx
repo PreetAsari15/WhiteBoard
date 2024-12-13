@@ -1,59 +1,41 @@
 import React, { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../context/AuthProvider';
+import { Link } from 'react-router-dom';
+import '../assets/styles/Login.css'
 
 const Login = () => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
 
-  const login = async (email, password) => {
-    const auth = getAuth();
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Handle userCredential if needed, e.g., set user in context or redirect
-      return userCredential;
-    } catch (error) {
-      setError(error.message);  // Set the error message for display
-      throw error;  // Propagate the error so the caller can handle it
-    }
-  };
-
-  const handleLogin = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Validate email and password
-    if (!email || !password) {
-      setError('Email and password are required!');
-      return;
-    }
-
-    try {
-      await login(email, password);
-      setError(''); // Clear error if login is successful
-    } catch (error) {
-      console.error("Login error:", error);
-    }
+    login(email, password);
   };
 
   return (
     <div>
       <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button type="submit">Login</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <p>
+        Don't have an account? <Link to="/signup">Sign up</Link>
+      </p>
     </div>
   );
 };

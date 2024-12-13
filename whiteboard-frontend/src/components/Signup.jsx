@@ -1,60 +1,53 @@
 import React, { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useAuth } from '../context/AuthProvider';
 
-const SignUp = () => {
+const Signup = () => {
+  const { signup } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
-  const signUp = async (email, password) => {
-    const auth = getAuth();
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('User signed up:', userCredential);
-      // You can redirect or handle post-signup behavior here
-    } catch (error) {
-      setError(error.message);
-    }
-  };
-
-  const handleSignUp = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    // Validate email and password
-    if (!email || !password) {
-      setError('Email and password are required!');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
-
-    try {
-      await signUp(email, password);
-      setError(''); // Clear error if signup is successful
-    } catch (error) {
-      console.error("Signup error:", error);
-    }
+    setError('');
+    signup(email, password);
   };
 
   return (
     <div>
       <h2>Sign Up</h2>
-      <form onSubmit={handleSignUp}>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <button type="submit">Sign Up</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
     </div>
   );
 };
 
-export default SignUp;
+export default Signup;

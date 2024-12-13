@@ -1,32 +1,49 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 
-// Create Auth Context
 const AuthContext = createContext();
 
-// Custom hook for consuming Auth Context
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
+  const login = async (email, password) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
+      navigate('/canvas'); // Navigate to canvas after login
+    } catch (error) {
+      console.error("Login error:", error.message);
+    }
+  };
 
-    return () => unsubscribe(); // Cleanup subscription
-  }, []);
+  const signup = async (email, password) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      setUser(userCredential.user);
+      navigate('/canvas'); // Navigate to canvas after signup
+    } catch (error) {
+      console.error("Signup error:", error.message);
+    }
+  };
 
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
-  const logout = () => signOut(auth);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      navigate('/'); // Navigate to login after logout
+    } catch (error) {
+      console.error("Logout error:", error.message);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, login, signup, logout }}>
+      {children}
     </AuthContext.Provider>
   );
 };

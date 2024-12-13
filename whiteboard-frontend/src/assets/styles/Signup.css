@@ -1,0 +1,23 @@
+/* Signup.css */
+form {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    margin: 0 auto;
+  }
+
+  input {
+    padding: 10px;
+    margin: 5px 0;
+  }
+
+  button {
+    padding: 10px;
+    background-color: #4caf50;
+    color: white;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #45a049;
+  }

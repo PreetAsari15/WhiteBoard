@@ -1,0 +1,17 @@
+/* Canvas.css */
+.canvas-container {
+    position: relative;
+    width: 80vw;
+    height: 60vh;
+    border: 1px solid #ccc;
+    margin-top: 20px;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    /* border: 1px solid black;
+    display: block;
+    margin: 0 auto;
+    background-color: white; */
+  }
