@@ -35,6 +35,16 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("draw", data);
   });
 
+  // Handle tool events for shapes or other tools
+  socket.on("tool-action", (data) => {
+    socket.broadcast.emit("tool-action", data);
+  });
+
+  // Updated to handle eraser events
+  socket.on("erase", (data) => {
+    socket.broadcast.emit("erase", data);
+  });
+
   // Handle canvas clear request
   socket.on("clear", () => {
     console.log("Clear canvas request received");
