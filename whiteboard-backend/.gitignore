@@ -14,6 +14,7 @@ jspm_packages/
 
 # Environment variables
 .env
+serviceAccountKey.json
 
 # OS specific files
 .DS_Store

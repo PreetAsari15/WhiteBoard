@@ -1,17 +1,67 @@
 /* Canvas.css */
-.canvas-container {
-    position: relative;
-    width: 80vw;
-    height: 60vh;
-    border: 1px solid #ccc;
-    margin-top: 20px;
-  }
 
-  canvas {
-    width: 100%;
-    height: 100%;
-    /* border: 1px solid black;
-    display: block;
-    margin: 0 auto;
-    background-color: white; */
-  }
+/* Parent container for Canvas component */
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Toolbar styling */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #f4f4f4;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Left section of toolbar */
+.toolbar-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+/* Input fields styling */
+.toolbar input[type='color'],
+.toolbar input[type='number'] {
+  margin-left: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 3px;
+}
+
+/* Clear and Logout buttons */
+.button {
+  padding: 6px 12px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.button:hover {
+  background: #0056b3;
+}
+
+.logout-button {
+  background: #ff4d4d;
+}
+
+.logout-button:hover {
+  background: #e63939;
+}
+
+/* Canvas styling */
+.canvas {
+  border: 1px solid black;
+  flex-grow: 1;
+  cursor: crosshair;
+  background-color: #fff;
+}

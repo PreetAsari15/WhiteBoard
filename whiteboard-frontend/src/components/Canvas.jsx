@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import '../assets/styles/Canvas.css';
 
 const socket = io('http://localhost:3000'); // Backend URL
 
@@ -9,6 +10,23 @@ function Canvas() {
   const [prevPos, setPrevPos] = useState(null);
   const [color, setColor] = useState('#000000'); // Default brush color
   const [brushSize, setBrushSize] = useState(2); // Default brush size
+  const [canvasSize, setCanvasSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight - 70, // Subtract toolbar height
+  });
+
+  useEffect(() => {
+    const resizeCanvas = () => {
+      setCanvasSize({
+        width: window.innerWidth,
+        height: window.innerHeight - 70, // Adjust based on toolbar height
+      });
+    };
+
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -94,24 +112,13 @@ function Canvas() {
   };
 
   const handleLogout = () => {
-    // Simple example: redirect to login page or perform logout actions
-    window.location.href = '/login'; // Adjust this as per your application
+    window.location.href = '/login';
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div
-        className="toolbar"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px',
-          background: '#f4f4f4',
-          borderBottom: '1px solid #ddd',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '10px' }}>
+    <div className="canvas-container">
+      <div className="toolbar">
+        <div className="toolbar-controls">
           <label>
             Brush Color:
             <input
@@ -130,32 +137,23 @@ function Canvas() {
               onChange={(e) => setBrushSize(Number(e.target.value))}
             />
           </label>
-          <button onClick={handleClearCanvas} style={{ padding: '5px 10px' }}>
+          <button onClick={handleClearCanvas} className="button">
             Clear Canvas
           </button>
         </div>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '5px 10px',
-            background: '#ff4d4d',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-          }}
-        >
+        <button onClick={handleLogout} className="button logout-button">
           Logout
         </button>
       </div>
       <canvas
         ref={canvasRef}
-        width={800}
-        height={600}
+        width={canvasSize.width}
+        height={canvasSize.height}
         onMouseDown={startDrawing}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
         onMouseMove={handleDraw}
-        style={{ border: '1px solid black', cursor: 'crosshair', flexGrow: 1 }}
+        className="canvas"
       />
     </div>
   );
